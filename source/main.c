@@ -1,13 +1,14 @@
 #include <conio.h>  // kbhit()
 #include <stdio.h>  // printf()
 #include <stdlib.h> // system()
-#include <string.h>
 
+#include "../header/Random.h"
 #include "../header/Screen.h"
 
 #define SUDOKUDIGIT ".123456789"
 
 /* Function */
+int IsValidSudokuString(char *sudoku_string);
 void PrintGrid(int *sudoku_grid);
 void PrintMenu(void);
 void PasteAndPrint(void);
@@ -66,9 +67,8 @@ void PasteAndPrint(void)
     printf("Paste an 81 digit string: ");
     fgets(buf, 100, stdin);
 
-    int len = strlen(buf) - 1;
-    if (len != 81)
-        printf("Not enough digit. There are %d digits\n", len);
+    if (!IsValidSudokuString(buf))
+        printf("Not a valid string\n");
     else {
         for (int i = 0; i < 81; i++)
             sudoku_grid[i] = buf[i] - 48;
@@ -82,6 +82,14 @@ void PasteAndPrint(void)
 void GenerateSudoku(void)
 {
     printf("Generate Sudoku\n");
+
+    int sudoku_grid[81];
+
+    for (int i = 0; i < 81; i++)
+        sudoku_grid[i] = RandomIntFrom0ToMax(10);
+
+    PrintGrid(sudoku_grid);
+
     system("pause");
 }
 
@@ -103,6 +111,27 @@ void PrintGrid(int *sudoku_grid)
         if (i % 3 == 2 && i != 8) printf(":----- ----- -----:\n");
     }
     printf("'-----'-----'-----'\n");
+}
+
+int isDigit(char c)
+{
+    if (c >= 48 && c <= 57) return 1;
+    return 0;
+}
+
+int IsValidSudokuString(char *sudoku_string)
+{
+    int isValid = 1;
+    int i = 0;
+
+    while (sudoku_string[i + 1] != '\0' && isValid) {
+        isValid = isDigit(sudoku_string[i]);
+        i++;
+    }
+
+    if (i != 81) isValid = 0;
+
+    return isValid;
 }
 
 // Takes a int value and choose the associates operation
