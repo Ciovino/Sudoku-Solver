@@ -1,4 +1,8 @@
-Simple Sudoku Solver. Nothing less, Nothing more.
+# Simple Sudoku Solver
+_Simple Sudoku Solver_. Nothing less, Nothing more.
 
-# Create the .exe file
-gcc .\source\main.c .\source\Screen.c -o sudoku.exe
+# How to use
+-> Open prompt window;
+-> Change diretory to where you copy the files;
+-> Type the following command: _gcc .\source\main.c .\source\Screen.c -o sudoku.exe_;
+-> Run _sudoku.exe_.
