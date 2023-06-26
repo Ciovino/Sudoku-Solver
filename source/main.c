@@ -1,6 +1,7 @@
 #include <conio.h>  // kbhit()
 #include <stdio.h>  // printf()
 #include <stdlib.h> // system()
+#include <time.h>   // clock_t, clock()
 
 #include "../header/Random.h"
 #include "../header/Screen.h"
@@ -222,6 +223,26 @@ int SolveBackTrack_Wrapper(int *grid)
         return 0;
 }
 
+void PrintExecutionTime(clock_t start, clock_t end)
+{
+    int millisecond = end - start, second = 0, minute = 0;
+
+    while (millisecond >= 1000) {
+        millisecond -= 1000;
+        second++;
+    }
+
+    while (second >= 60) {
+        second -= 60;
+        minute++;
+    }
+
+    printf("Solving Time: ");
+    if (minute != 0) printf("%d minute%s", minute, minute == 1 ? " " : "s ");
+    if (second != 0) printf("%d second%s", second, second == 1 ? " " : "s ");
+    printf("%d milliseconds\n", millisecond);
+}
+
 void BackTrackSolver(void)
 {
     printf("BackTrack\n");
@@ -234,7 +255,12 @@ void BackTrackSolver(void)
     } else
         PrintGrid(sudoku_grid);
 
-    if (!SolveBackTrack_Wrapper(sudoku_grid)) printf("Cannot be solved!\n");
+    clock_t start = clock();
+    int solved = SolveBackTrack_Wrapper(sudoku_grid);
+    clock_t end = clock();
+
+    PrintExecutionTime(start, end);
+    if (!solved) printf("Cannot be solved!\n");
 }
 
 void PrintRow(int *sudoku_grid, int offset)
