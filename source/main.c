@@ -18,6 +18,7 @@ typedef struct {
 
 /* Function */
 int *ConvertGrid(char *sudokustring);
+int SolveBackTrack_Wrapper(int *grid);
 void BackTrackSolver();
 int IsValidSudokuString(char *sudoku_string);
 void PrintGrid(int *sudoku_grid);
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
         menu_value = ChooseOperation(menu_value);
 
         switch (menu_value) {
-        case 1: // Paste a 81 digit string e print the sudoku
+        case 1: // Paste a 81 digit string and print the sudoku
             PasteAndPrint();
             break;
 
@@ -190,27 +191,17 @@ int SolveBackTrack_Ric(int *grid, SolverCell *all_cell, int dimCell, int cell)
     return 0;
 }
 
-void BackTrackSolver(void)
+int SolveBackTrack_Wrapper(int *grid)
 {
-    printf("BackTrack\n");
-
-    int *sudoku_grid = PasteAndConvert();
-
-    if (sudoku_grid == NULL) {
-        printf("Not a valid string\n");
-        return;
-    } else
-        PrintGrid(sudoku_grid);
-
     // Count how many number remain
     int to_solve = 0;
 
     for (int i = 0; i < 81; i++)
-        if (sudoku_grid[i] == 0) to_solve++;
+        if (grid[i] == 0) to_solve++;
     SolverCell *all_cell = malloc(to_solve * sizeof(*all_cell));
 
     for (int i = 0, j = 0; i < 81; i++) {
-        if (sudoku_grid[i] != 0) continue;
+        if (grid[i] != 0) continue;
 
         all_cell[j].idx = i;
         all_cell[j].row = i - i % 9;
@@ -224,15 +215,26 @@ void BackTrackSolver(void)
         j++;
     }
 
-    if (SolveBackTrack_Ric(sudoku_grid, all_cell, to_solve, 0)) {
-        printf("Solved\n");
-        PrintGrid(sudoku_grid);
+    if (SolveBackTrack_Ric(grid, all_cell, to_solve, 0)) {
+        PrintGrid(grid);
+        return 1;
     } else
-        printf("Cannot be solved\n");
+        return 0;
+}
 
-    for (int i = 0; i < to_solve; i++)
-        free(all_cell[i].possible);
-    free(all_cell);
+void BackTrackSolver(void)
+{
+    printf("BackTrack\n");
+
+    int *sudoku_grid = PasteAndConvert();
+
+    if (sudoku_grid == NULL) {
+        printf("Not a valid string\n");
+        return;
+    } else
+        PrintGrid(sudoku_grid);
+
+    if (!SolveBackTrack_Wrapper(sudoku_grid)) printf("Cannot be solved!\n");
 }
 
 void PrintRow(int *sudoku_grid, int offset)
