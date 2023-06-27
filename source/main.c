@@ -10,14 +10,17 @@
 /* Function */
 int IsValidSudokuString(char *sudoku_string);
 void PrintGrid(int *sudoku_grid);
-void PrintMenu(void);
 void PasteAndPrint(void);
 void GenerateSudoku(void);
+void PrintMenu(void);
+void PrintSubMenu(int submenu);
 int ChooseOperation(int value);
+int ChooseOperation_SubMenu(int menu, int value);
 
 int main(int argc, char **argv)
 {
     int menu_value = -1;
+    int submenu_value = -1;
     int keep_going = 1;
     do {
         PrintMenu();
@@ -26,8 +29,24 @@ int main(int argc, char **argv)
         menu_value = ChooseOperation(menu_value);
 
         switch (menu_value) {
-        case 1: // Paste a 81 digit string e print the sudoku
-            PasteAndPrint();
+        case 1: // Paste a 81 digit string and print the sudoku
+            // Sub menu
+            PrintSubMenu(menu_value);
+            submenu_value = getch();
+            submenu_value = ChooseOperation_SubMenu(menu_value, submenu_value);
+
+            switch (submenu_value) {
+            case 1: PasteAndPrint(); break;
+
+            case 2:
+                printf("Paste and Play\n");
+                system("pause");
+                break;
+
+            case -1:
+            default: break;
+            }
+
             break;
 
         case 2: // Generate a random 81 digit string and print the sudoku
@@ -46,19 +65,9 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void PrintMenu(void)
-{
-    ClearAndHome();
-    printf("Simple Sudoku Solver\n");
-
-    printf("What do you want to do?\n");
-    printf("\t1- Paste and print;\n");
-    printf("\t2- Generate Sudoku;\n");
-    printf("\t3- Exit\n");
-}
-
 void PasteAndPrint(void)
 {
+    ClearAndHome();
     printf("Paste And Print\n");
 
     int sudoku_grid[81];
@@ -81,6 +90,7 @@ void PasteAndPrint(void)
 
 void GenerateSudoku(void)
 {
+    ClearAndHome();
     printf("Generate Sudoku\n");
 
     int sudoku_grid[81];
@@ -134,6 +144,33 @@ int IsValidSudokuString(char *sudoku_string)
     return isValid;
 }
 
+void PrintMenu(void)
+{
+    ClearAndHome();
+    printf("Simple Sudoku Solver\n");
+
+    printf("What do you want to do?\n");
+    printf("\t1- Play;\n");
+    printf("\t2- Generate Sudoku;\n");
+    printf("\t3- Exit\n");
+}
+
+void PrintSubMenu(int submenu)
+{
+    ClearAndHome();
+
+    switch (submenu) {
+    case 1: // Play
+        printf("Play!!\n");
+
+        printf("\t1- Paste and Print;\n");
+        printf("\t2- Paste and Play.\n");
+        break;
+
+    default: break;
+    }
+}
+
 // Takes a int value and choose the associates operation
 int ChooseOperation(int value)
 {
@@ -145,6 +182,24 @@ int ChooseOperation(int value)
         return 2;
 
     case 51: // char '3'
+    default: return -1;
+    }
+}
+
+int ChooseOperation_SubMenu(int menu, int value)
+{
+    switch (menu) {
+    case 1: // Play
+        switch (value) {
+        case 49: // char '1'
+            return 1;
+
+        case 50: // char '2'
+            return 2;
+
+        default: return -1;
+        }
+
     default: return -1;
     }
 }
