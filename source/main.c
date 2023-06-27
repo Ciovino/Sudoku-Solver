@@ -2,14 +2,20 @@
 #include <stdio.h>  // printf()
 #include <stdlib.h> // system()
 
+#include "../header/Colori.h"
 #include "../header/Random.h"
 #include "../header/Screen.h"
 
 #define SUDOKUDIGIT ".123456789"
+#define UP          119
+#define DOWN        115
+#define RIGHT       100
+#define LEFT        97
 
 /* Function */
 int IsValidSudokuString(char *sudoku_string);
 void PrintGrid(int *sudoku_grid);
+void PasteAndPlay(void);
 void PasteAndPrint(void);
 void GenerateSudoku(void);
 void PrintMenu(void);
@@ -38,10 +44,7 @@ int main(int argc, char **argv)
             switch (submenu_value) {
             case 1: PasteAndPrint(); break;
 
-            case 2:
-                printf("Paste and Play\n");
-                system("pause");
-                break;
+            case 2: PasteAndPlay(); break;
 
             case -1:
             default: break;
@@ -84,6 +87,106 @@ void PasteAndPrint(void)
 
         PrintGrid(sudoku_grid);
     }
+
+    system("pause");
+}
+
+int CompleteSudoku(int *grid)
+{
+    for (int i = 0; i < 81; i++)
+        if (grid[i] == 0) return 0;
+    return 1;
+}
+
+void PrintPlayGrid(int *grid, int pos)
+{
+    ClearAndHome();
+    printf(".-----.-----.-----.\n");
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            if (j % 3 == 0) printf("|");
+            if (j + i * 9 == pos) BackGroundAndText(COL_WHITE, COL_BLACK);
+            printf("%c", SUDOKUDIGIT[grid[j + i * 9]]);
+            Textcolor(COL_NORMAL);
+            if (j % 3 != 2) printf(" ");
+        }
+        printf("|\n");
+        if (i % 3 == 2 && i != 8) printf(":----- ----- -----:\n");
+    }
+    printf("'-----'-----'-----'\n");
+}
+
+void Play(int *grid)
+{
+    int pos = 0;
+    PrintPlayGrid(grid, pos);
+
+    while (!CompleteSudoku(grid)) {
+        int key;
+        while (!kbhit()) {}
+
+        key = getch();
+
+        switch (key) {
+        case UP:
+            pos -= 9;
+            if (pos < 0) pos += 81;
+            break;
+
+        case DOWN:
+            pos += 9;
+            if (pos >= 81) pos -= 81;
+            break;
+
+        case RIGHT:
+            pos++;
+            if (pos >= 81) pos = 0;
+            break;
+
+        case LEFT:
+            pos--;
+            if (pos < 0) pos = 80;
+            break;
+
+        case 48: // 0 -> Delete cell value
+        case 49:
+        case 50:
+        case 51:
+        case 52:
+        case 53:
+        case 54:
+        case 55:
+        case 56:
+        case 57: grid[pos] = key - 48; break;
+
+        default: break;
+        }
+
+        PrintPlayGrid(grid, pos);
+    }
+}
+
+void PasteAndPlay(void)
+{
+    ClearAndHome();
+    printf("Paste And Play\n");
+
+    int sudoku_grid[81];
+    char buf[100];
+
+    printf("Paste an 81 digit string: ");
+    fgets(buf, 100, stdin);
+
+    if (!IsValidSudokuString(buf))
+        printf("Not a valid string\n");
+    else {
+        for (int i = 0; i < 81; i++)
+            sudoku_grid[i] = buf[i] - 48;
+
+        PrintGrid(sudoku_grid);
+    }
+
+    Play(sudoku_grid);
 
     system("pause");
 }
