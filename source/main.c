@@ -12,9 +12,16 @@
 #define RIGHT       100
 #define LEFT        97
 
+typedef enum { FIXED = -1, EMPTY, CORRECT, WRONG } SudokuState;
+
+typedef struct {
+    int value;
+    SudokuState state;
+} SudokuCell;
+
 /* Function */
 int IsValidSudokuString(char *sudoku_string);
-void PrintGrid(int *sudoku_grid);
+void PrintGrid(SudokuCell *sudoku_grid);
 void PasteAndPlay(void);
 void PasteAndPrint(void);
 void GenerateSudoku(void);
@@ -68,12 +75,25 @@ int main(int argc, char **argv)
     return 0;
 }
 
+SudokuCell NewSudokuCell(int number)
+{
+    SudokuCell cell;
+
+    cell.value = number;
+    if (number == 0)
+        cell.state = EMPTY;
+    else
+        cell.state = FIXED;
+
+    return cell;
+}
+
 void PasteAndPrint(void)
 {
     ClearAndHome();
     printf("Paste And Print\n");
 
-    int sudoku_grid[81];
+    SudokuCell sudoku_grid[81];
     char buf[100];
 
     printf("Paste an 81 digit string: ");
@@ -83,7 +103,7 @@ void PasteAndPrint(void)
         printf("Not a valid string\n");
     else {
         for (int i = 0; i < 81; i++)
-            sudoku_grid[i] = buf[i] - 48;
+            sudoku_grid[i] = NewSudokuCell(buf[i] - 48);
 
         PrintGrid(sudoku_grid);
     }
@@ -91,23 +111,37 @@ void PasteAndPrint(void)
     system("pause");
 }
 
-int CompleteSudoku(int *grid)
+int CompleteSudoku(SudokuCell *grid)
 {
     for (int i = 0; i < 81; i++)
-        if (grid[i] == 0) return 0;
+        if (grid[i].value == 0) return 0;
     return 1;
 }
 
-void PrintPlayGrid(int *grid, int pos)
+void PrintPlayGrid(SudokuCell *grid, int pos)
 {
     ClearAndHome();
     printf(".-----.-----.-----.\n");
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
             if (j % 3 == 0) printf("|");
-            if (j + i * 9 == pos) BackGroundAndText(COL_WHITE, COL_BLACK);
-            printf("%c", SUDOKUDIGIT[grid[j + i * 9]]);
+
+            if (j + i * 9 == pos)
+                BackGroundAndText(COL_WHITE, COL_BLACK);
+            else {
+                switch (grid[j + i * 9].state) {
+                case CORRECT: Textcolor(COL_LIGHT_GREEN); break;
+                case WRONG: Textcolor(COL_RED); break;
+
+                case FIXED:
+                case EMPTY:
+                default: Textcolor(COL_NORMAL); break;
+                }
+            }
+
+            printf("%c", SUDOKUDIGIT[grid[j + i * 9].value]);
             Textcolor(COL_NORMAL);
+
             if (j % 3 != 2) printf(" ");
         }
         printf("|\n");
@@ -116,7 +150,42 @@ void PrintPlayGrid(int *grid, int pos)
     printf("'-----'-----'-----'\n");
 }
 
-void Play(int *grid)
+SudokuCell ChangeSudokuCell(SudokuCell *grid, int pos, int new_number)
+{
+    SudokuCell previous = grid[pos];
+    if (previous.state == FIXED || previous.value == new_number) return previous;
+
+    SudokuCell new;
+    new.value = new_number;
+
+    if (new_number == 0) {
+        new.state = EMPTY;
+        return new;
+    }
+
+    int row = pos - pos % 9, col = pos % 9, box = row - 9 * ((row / 9) % 3) + 3 * (col / 3), found = 0;
+    for (int i = 0; i < 3 && !found; i++) {
+        for (int j = 0; j < 3 && !found; j++) {
+            int val = i * 3 + j;
+
+            int next_row = row + val;
+            int next_col = col + 9 * val;
+            int next_box = box + j + 9 * i;
+
+            int valid_row = next_row != pos && new_number == grid[next_row].value,
+                valid_col = next_col != pos && new_number == grid[next_col].value,
+                valid_box = next_box != pos && new_number == grid[next_box].value;
+
+            if (valid_row || valid_col || valid_box) found = 1;
+        }
+    }
+
+    new.state = found ? WRONG : CORRECT;
+
+    return new;
+}
+
+void Play(SudokuCell *grid)
 {
     int pos = 0;
     PrintPlayGrid(grid, pos);
@@ -157,7 +226,7 @@ void Play(int *grid)
         case 54:
         case 55:
         case 56:
-        case 57: grid[pos] = key - 48; break;
+        case 57: grid[pos] = ChangeSudokuCell(grid, pos, key - 48); break;
 
         default: break;
         }
@@ -171,7 +240,7 @@ void PasteAndPlay(void)
     ClearAndHome();
     printf("Paste And Play\n");
 
-    int sudoku_grid[81];
+    SudokuCell sudoku_grid[81];
     char buf[100];
 
     printf("Paste an 81 digit string: ");
@@ -181,7 +250,7 @@ void PasteAndPlay(void)
         printf("Not a valid string\n");
     else {
         for (int i = 0; i < 81; i++)
-            sudoku_grid[i] = buf[i] - 48;
+            sudoku_grid[i] = NewSudokuCell(buf[i] - 48);
 
         PrintGrid(sudoku_grid);
     }
@@ -196,27 +265,27 @@ void GenerateSudoku(void)
     ClearAndHome();
     printf("Generate Sudoku\n");
 
-    int sudoku_grid[81];
+    SudokuCell sudoku_grid[81];
 
     for (int i = 0; i < 81; i++)
-        sudoku_grid[i] = RandomIntFrom0ToMax(10);
+        sudoku_grid[i] = NewSudokuCell(RandomIntFrom0ToMax(10));
 
     PrintGrid(sudoku_grid);
 
     system("pause");
 }
 
-void PrintRow(int *sudoku_grid, int offset)
+void PrintRow(SudokuCell *sudoku_grid, int offset)
 {
     for (int i = 0; i < 9; i++) {
         if (i % 3 == 0) printf("|");
-        printf("%c", SUDOKUDIGIT[sudoku_grid[i + offset]]);
+        printf("%c", SUDOKUDIGIT[sudoku_grid[i + offset].value]);
         if (i % 3 != 2) printf(" ");
     }
     printf("|\n");
 }
 
-void PrintGrid(int *sudoku_grid)
+void PrintGrid(SudokuCell *sudoku_grid)
 {
     printf(".-----.-----.-----.\n");
     for (int i = 0; i < 9; i++) {
