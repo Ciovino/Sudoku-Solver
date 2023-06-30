@@ -11,8 +11,9 @@
 #define DOWN        115
 #define RIGHT       100
 #define LEFT        97
+#define ESC         101
 
-typedef enum { FIXED = -1, EMPTY, CORRECT, WRONG } SudokuState;
+typedef enum { FIXED = -2, EMPTY, WRONG, CORRECT, HIDDEN } SudokuState;
 
 typedef struct {
     int value;
@@ -80,10 +81,7 @@ SudokuCell NewSudokuCell(int number)
     SudokuCell cell;
 
     cell.value = number;
-    if (number == 0)
-        cell.state = EMPTY;
-    else
-        cell.state = FIXED;
+    cell.state = number == 0 ? EMPTY : FIXED;
 
     return cell;
 }
@@ -111,11 +109,57 @@ void PasteAndPrint(void)
     system("pause");
 }
 
+int CheckRow(SudokuCell *grid, int pos, int offset)
+{
+    int row_number = pos - pos % 9, next_row = row_number + offset;
+
+    return (next_row != pos && grid[pos].value == grid[next_row].value);
+}
+
+int CheckCol(SudokuCell *grid, int pos, int offset)
+{
+    int col_number = pos % 9, next_col = col_number + 9 * offset;
+
+    return (next_col != pos && grid[pos].value == grid[next_col].value);
+}
+
+int CheckBox(SudokuCell *grid, int pos, int i, int j)
+{
+    int row = pos - pos % 9, col = pos % 9;
+    int box_number = row - 9 * ((row / 9) % 3) + 3 * (col / 3), next_box = box_number + j + i * 9;
+
+    return (next_box != pos && grid[pos].value == grid[next_box].value);
+}
+
+int IsCorrectNumber(SudokuCell *grid, int pos)
+{
+    if (grid[pos].value == 0) return 0;
+
+    int pos_row = pos - pos % 9, pos_col = pos % 9, pos_box = pos_row - 9 * ((pos_row / 9) % 3) + 3 * (pos_col / 3),
+        correct = 1;
+
+    for (int i = 0; i < 3 && correct; i++) {
+        for (int j = 0; j < 3 && correct; j++) {
+            int idx = i * 3 + j;
+
+            int check_row = CheckRow(grid, pos, idx), check_col = CheckCol(grid, pos, idx),
+                check_box = CheckBox(grid, pos, i, j);
+
+            correct = !check_row && !check_col && !check_box;
+        }
+    }
+
+    return correct;
+}
+
 int CompleteSudoku(SudokuCell *grid)
 {
+    int correct_counter = 0;
+
     for (int i = 0; i < 81; i++)
-        if (grid[i].value == 0) return 0;
-    return 1;
+        correct_counter += IsCorrectNumber(grid, i);
+
+    return correct_counter == 81;
 }
 
 void PrintPlayGrid(SudokuCell *grid, int pos)
@@ -133,6 +177,7 @@ void PrintPlayGrid(SudokuCell *grid, int pos)
                 case CORRECT: Textcolor(COL_LIGHT_GREEN); break;
                 case WRONG: Textcolor(COL_RED); break;
 
+                case HIDDEN:
                 case FIXED:
                 case EMPTY:
                 default: Textcolor(COL_NORMAL); break;
@@ -158,45 +203,27 @@ SudokuCell ChangeSudokuCell(SudokuCell *grid, int pos, int new_number)
     SudokuCell new;
     new.value = new_number;
 
-    if (new_number == 0) {
+    if (new_number == 0)
         new.state = EMPTY;
-        return new;
-    }
-
-    int row = pos - pos % 9, col = pos % 9, box = row - 9 * ((row / 9) % 3) + 3 * (col / 3), found = 0;
-    for (int i = 0; i < 3 && !found; i++) {
-        for (int j = 0; j < 3 && !found; j++) {
-            int val = i * 3 + j;
-
-            int next_row = row + val;
-            int next_col = col + 9 * val;
-            int next_box = box + j + 9 * i;
-
-            int valid_row = next_row != pos && new_number == grid[next_row].value,
-                valid_col = next_col != pos && new_number == grid[next_col].value,
-                valid_box = next_box != pos && new_number == grid[next_box].value;
-
-            if (valid_row || valid_col || valid_box) found = 1;
-        }
-    }
-
-    new.state = found ? WRONG : CORRECT;
+    else
+        new.state = HIDDEN;
 
     return new;
 }
 
 void Play(SudokuCell *grid)
 {
-    int pos = 0;
+    int pos = 0, esc = 0;
     PrintPlayGrid(grid, pos);
 
-    while (!CompleteSudoku(grid)) {
+    while (!CompleteSudoku(grid) && !esc) {
         int key;
         while (!kbhit()) {}
-
         key = getch();
 
         switch (key) {
+        case ESC: esc = 1; break;
+
         case UP:
             pos -= 9;
             if (pos < 0) pos += 81;
@@ -217,7 +244,7 @@ void Play(SudokuCell *grid)
             if (pos < 0) pos = 80;
             break;
 
-        case 48: // 0 -> Delete cell value
+        case 48:
         case 49:
         case 50:
         case 51:
