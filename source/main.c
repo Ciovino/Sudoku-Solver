@@ -12,6 +12,7 @@
 #define RIGHT       100
 #define LEFT        97
 #define ESC         101
+#define VALIDATOR   118
 
 typedef enum { FIXED = -2, EMPTY, WRONG, CORRECT, HIDDEN } SudokuState;
 
@@ -162,6 +163,23 @@ int CompleteSudoku(SudokuCell *grid)
     return correct_counter == 81;
 }
 
+void Validator(SudokuCell *grid)
+{
+    for (int i = 0; i < 81; i++) {
+        if (grid[i].state != HIDDEN) continue;
+
+        grid[i].state = IsCorrectNumber(grid, i);
+    }
+}
+
+void ClearValidation(SudokuCell *grid)
+{
+    for (int i = 0; i < 81; i++) {
+        if (grid[i].state == FIXED || grid[i].state == EMPTY) continue;
+        grid[i].state = HIDDEN;
+    }
+}
+
 void PrintPlayGrid(SudokuCell *grid, int pos)
 {
     ClearAndHome();
@@ -224,6 +242,8 @@ void Play(SudokuCell *grid)
         switch (key) {
         case ESC: esc = 1; break;
 
+        case VALIDATOR: Validator(grid); break;
+
         case UP:
             pos -= 9;
             if (pos < 0) pos += 81;
@@ -253,7 +273,10 @@ void Play(SudokuCell *grid)
         case 54:
         case 55:
         case 56:
-        case 57: grid[pos] = ChangeSudokuCell(grid, pos, key - 48); break;
+        case 57:
+            ClearValidation(grid);
+            grid[pos] = ChangeSudokuCell(grid, pos, key - 48);
+            break;
 
         default: break;
         }
